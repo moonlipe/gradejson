@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GradeJson · Planilha de objetos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- barra superior -->
+        <div class="toolbar">
+            <div class="logo-area">
+                <span class="logo">📊 GradeJson</span>
+            </div>
+            <div class="file-area">
+                <input type="file" id="fileInput" accept=".json" multiple>
+                <button class="btn btn-primary" id="loadFileBtn">📂 Carregar arquivo(s)</button>
+                <button class="btn btn-outline" id="addSampleBtn">➕ Exemplo</button>
+                <span class="status-badge" id="docCounter">📄 0 documentos</span>
+            </div>
+            <div class="flex-spacer"></div>
+
+            <!-- Botão de tema com dropdown - Z-INDEX CORRIGIDO -->
+            <div class="theme-dropdown">
+                <button class="btn btn-outline" id="themeBtn" aria-haspopup="true" aria-expanded="false">🎨 Tema</button>
+                <div class="theme-dropdown-content" id="themeDropdown" role="menu" aria-labelledby="themeBtn">
+                    <a href="#" role="menuitem" data-theme="light">☀️ Claro</a>
+                    <a href="#" role="menuitem" data-theme="system">💻 Sistema</a>
+                    <a href="#" role="menuitem" data-theme="dark">🌙 Escuro</a>
+                </div>
+            </div>
+
+            <button class="btn btn-outline" id="exportJsonBtn">⬇ Exportar</button>
+            <button class="btn btn-outline" id="clearAllBtn">🗑 Limpar</button>
+            <button class="btn btn-outline" id="syncFromEditorBtn">🔄 Aplicar do Editor</button>
+        </div>
+
+        <!-- Layout de duas colunas -->
+        <div class="split-layout">
+            <!-- Coluna esquerda: Editor JSON -->
+            <div class="editor-panel">
+                <div class="panel-header">
+                    <h3>📝 Editor JSON</h3>
+                    <div class="panel-actions">
+                        <button class="btn btn-small" id="formatEditorBtn">🔧 Formatar</button>
+                        <button class="btn btn-small" id="validateEditorBtn">✅ Validar</button>
+                        <button class="btn btn-small" id="beautifyEditorBtn">✨ Embelezar</button>
+                    </div>
+                </div>
+                <textarea id="jsonEditorTextarea" placeholder='Cole seu JSON aqui (array de objetos ou objeto único)'>[
+    {
+        "nome": "Exemplo",
+        "idade": 30,
+        "ativo": true
+    }
+]</textarea>
+                <div id="editorValidationMessage" class="validation-message"></div>
+            </div>
+            <!-- vertical splitter between editor and grid -->
+            <div class="splitter vertical" aria-hidden="true"></div>
+
+            <!-- Coluna direita: Grid -->
+            <div class="grid-panel">
+                <!-- grid principal (sheet) -->
+                <div class="sheet-wrapper" id="sheetWrapper">
+                    <div class="sheet-grid" id="sheetGrid">
+                        <!-- cabeçalho gerado via js, linhas dinâmicas -->
+                    </div>
+                </div>
+                <!-- controls above grid -->
+                <div class="sheet-controls">
+                    <button class="btn btn-small" id="autoResizeBtn">📏 Ajustar Colunas</button>
+                    <button class="btn btn-small" id="copyJsonBtn">📋 Copiar JSON</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/utils/jsonParser.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
