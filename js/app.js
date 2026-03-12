@@ -177,10 +177,16 @@ function formatNestedValue(val, path, depth = 0) {
 }
 
 // ========== RENDERIZAÇÃO DO GRID ==========
-function renderGrid() {
+function renderGrid({autoResize = true} = {}) {
+    // remember scroll so we don't jump when rebuilding
+    const prevScrollLeft = sheetGridEl.scrollLeft;
+    const prevScrollTop = sheetGridEl.scrollTop;
+
     if (documentos.length === 0) {
         sheetGridEl.innerHTML = '<div class="sheet-header"></div>';
         docCounterSpan.innerHTML = '📄 0 documentos';
+        sheetGridEl.scrollLeft = prevScrollLeft;
+        sheetGridEl.scrollTop = prevScrollTop;
         return;
     }
     
@@ -238,24 +244,33 @@ function renderGrid() {
     });
 
     sheetGridEl.innerHTML = headerHtml + linhasHtml;
-    
+    // restore scroll after DOM update
+    sheetGridEl.scrollLeft = prevScrollLeft;
+    sheetGridEl.scrollTop = prevScrollTop;
+
     const qtd = documentos.length;
     docCounterSpan.innerHTML = `📄 ${qtd} ${qtd === 1 ? 'documento' : 'documentos'}`;
 
     // nothing special to do here anymore; editing is handled via
     // delegation on sheetGridEl in attachEventListeners()
     
-    setTimeout(() => {
-        autoResizeColumns();
-        initColumnResize();
-        initRowResize();
-        adjustRowHeightAfterExpand();
-    }, 100);
-    // run again later in case nested content expanded after initial layout
-    setTimeout(() => {
-        autoResizeColumns();
-        adjustRowHeightAfterExpand();
-    }, 300);
+    if (autoResize) {
+        setTimeout(() => {
+            autoResizeColumns();
+            initColumnResize();
+            initRowResize();
+            adjustRowHeightAfterExpand();
+        }, 100);
+        // run again later in case nested content expanded after initial layout
+        setTimeout(() => {
+            autoResizeColumns();
+            adjustRowHeightAfterExpand();
+        }, 300);
+    } else {
+        // still need the resize handles when columns are static
+        setTimeout(initColumnResize, 100);
+        setTimeout(initRowResize, 100);
+    }
 }
 
 // ========== FUNÇÕES DE INTERAÇÃO ==========
@@ -579,12 +594,23 @@ function autoResizeColumns() {
     });
 }
 
+
 // ========== GRID EDIT/FIT UTILITIES ==========
 
 function handleCellEdit(e) {
-    const cell = e.target;
-    const newValue = cell.innerText.trim();
-    const path = cell.dataset.path;
+    const leaf = e.target;                        // might be primitive span or sheet-cell
+    const cell = leaf.closest('.sheet-cell');     // actual column cell
+    if (!cell) return;
+
+    const newValue = leaf.innerText.trim();
+    const oldValue = leaf.dataset.originalValue || '';
+    // clear stored original to avoid stale data
+    delete leaf.dataset.originalValue;
+    if (newValue === oldValue) {
+        // nothing actually changed, skip sync/resize
+        return;
+    }
+    const path = leaf.dataset.path || cell.dataset.path;
     if (!path) return;
     const parsed = parseValue(newValue);
 
@@ -620,10 +646,8 @@ function handleCellEdit(e) {
     }
 
     sincronizarParaEditor();
-    // editing may have changed text width/height; reflow
-    autoResizeColumns();
-    adjustRowHeightAfterExpand();
-}
+    // editing may have changed text width/height but we no longer auto‑resize
+    adjustRowHeightAfterExpand();}
 
 function initRowResize() {
     // called after grid render
@@ -829,6 +853,8 @@ function attachEventListeners() {
         if (prim && prim.dataset.path) {
             // start editing the primitive value
             selectCell(prim.dataset.path.split(':').slice(0,2).join(':'));
+            // remember previous text so we can avoid unnecessary work
+            prim.dataset.originalValue = prim.innerText.trim();
             prim.setAttribute('contenteditable', 'true');
             prim.focus();
             return;
@@ -852,6 +878,7 @@ function attachEventListeners() {
         const path = target.dataset.path;
         if (!path) return;
 
+        target.dataset.originalValue = target.innerText.trim();
         target.setAttribute('contenteditable', 'true');
         target.focus();
         // select all text for convenience
