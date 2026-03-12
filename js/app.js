@@ -178,15 +178,34 @@ function formatNestedValue(val, path, depth = 0) {
 
 // ========== RENDERIZAÇÃO DO GRID ==========
 function renderGrid({autoResize = true} = {}) {
-    // remember scroll so we don't jump when rebuilding
-    const prevScrollLeft = sheetGridEl.scrollLeft;
-    const prevScrollTop = sheetGridEl.scrollTop;
+        // Scroll: ao expandir, centralizar a célula expandida na área visível
+        function scrollToExpandedCellCenter() {
+            if (!sheetWrapperEl) return;
+            const expanded = Array.from(expandedCells);
+            if (expanded.length === 0) return;
+            const lastExpanded = expanded[expanded.length - 1];
+            const cell = sheetGridEl.querySelector(`[data-path="${lastExpanded}"]`);
+            if (!cell) return;
+            // Centraliza a célula expandida
+            const cellRect = cell.getBoundingClientRect();
+            const wrapperRect = sheetWrapperEl.getBoundingClientRect();
+            const cellCenter = cellRect.left + (cellRect.width / 2);
+            const wrapperCenter = wrapperRect.left + (wrapperRect.width / 2);
+            const scrollDiff = cellCenter - wrapperCenter;
+            sheetWrapperEl.scrollLeft += scrollDiff;
+        }
+    // Corrigir: preservar scroll do sheetWrapper
+    const sheetWrapperEl = document.getElementById('sheetWrapper');
+    const prevScrollLeft = sheetWrapperEl ? sheetWrapperEl.scrollLeft : 0;
+    const prevScrollTop = sheetWrapperEl ? sheetWrapperEl.scrollTop : 0;
 
     if (documentos.length === 0) {
         sheetGridEl.innerHTML = '<div class="sheet-header"></div>';
         docCounterSpan.innerHTML = '📄 0 documentos';
-        sheetGridEl.scrollLeft = prevScrollLeft;
-        sheetGridEl.scrollTop = prevScrollTop;
+        if (sheetWrapperEl) {
+            sheetWrapperEl.scrollLeft = prevScrollLeft;
+            sheetWrapperEl.scrollTop = prevScrollTop;
+        }
         return;
     }
     
@@ -244,9 +263,11 @@ function renderGrid({autoResize = true} = {}) {
     });
 
     sheetGridEl.innerHTML = headerHtml + linhasHtml;
-    // restore scroll after DOM update
-    sheetGridEl.scrollLeft = prevScrollLeft;
-    sheetGridEl.scrollTop = prevScrollTop;
+    // restaurar scroll após atualização do DOM
+    if (sheetWrapperEl) {
+        sheetWrapperEl.scrollTop = prevScrollTop;
+        scrollToExpandedCellCenter();
+    }
 
     const qtd = documentos.length;
     docCounterSpan.innerHTML = `📄 ${qtd} ${qtd === 1 ? 'documento' : 'documentos'}`;
@@ -281,7 +302,52 @@ function toggleCellExpansion(path) {
     } else {
         expandedCells.add(path);
     }
-    renderGrid();
+    // Atualiza apenas a célula expandida
+    updateExpandedCell(path);
+}
+
+// Atualiza o conteúdo da célula expandida sem rerenderizar o grid inteiro
+function updateExpandedCell(path) {
+    const cell = document.querySelector(`[data-path="${path}"]`);
+    if (!cell) return;
+    // Descobre valor
+    const parts = path.split(':');
+    const rowIdx = parseInt(parts[0], 10);
+    const col = parts.slice(1).join(':');
+    let valor = documentos[rowIdx];
+    let keys = parts.slice(1);
+    while (keys.length > 0 && valor) {
+        const k = keys.shift();
+        valor = valor[k];
+    }
+    // Renderiza apenas o conteúdo da célula, sem duplicar estrutura
+    let html = '';
+    if (isObject(valor) || isArray(valor)) {
+        // Só atualiza a subgrid dentro da célula, não a célula inteira
+        const expanded = expandedCells.has(path);
+        // Atualiza apenas a subgrid
+        const subgrid = cell.querySelector('.subgrid-content');
+        if (subgrid) {
+            // Remove subgrid se estiver contraindo
+            if (!expanded) {
+                subgrid.remove();
+                cell.classList.remove('expanded');
+            }
+        } else if (expanded) {
+            // Adiciona subgrid se expandindo
+            html = formatNestedValue(valor, path);
+            // Extrai apenas o subgrid gerado
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            const newSubgrid = tempDiv.querySelector('.subgrid-content');
+            if (newSubgrid) {
+                cell.appendChild(newSubgrid);
+                cell.classList.add('expanded');
+            }
+        }
+    }
+    // Reaplica eventos de resize
+    setTimeout(initColumnResize, 50);
 }
 
 // ========== SELEÇÃO/CROSS-HIGHLIGHT ==========
