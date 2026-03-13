@@ -1,0 +1,78 @@
+     .tutorial-block-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: transparent;
+        z-index: 100000;
+        pointer-events: auto;
+    }
+/* Overlay escurecendo a tela */
+.tutorial-dark-overlay {
+    display: none;
+}
+
+@keyframes tutorialFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+
+/* Círculo de destaque */
+.tutorial-highlight {
+    display: none;
+}
+
+/* Toast explicativo */
+.tutorial-toast {
+    position: absolute;
+    min-width: 220px;
+    max-width: 340px;
+    background: #fff;
+    color: #1a2639;
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    padding: 1.2rem 1.6rem;
+    font-size: 1rem;
+    font-family: 'Inter', sans-serif;
+    z-index: 100001;
+    pointer-events: auto;
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+    transition: opacity 0.4s, transform 0.4s;
+    animation: tutorialToastIn 0.5s forwards;
+}
+
+.tutorial-highlight-area {
+    display: none;
+}
+
+
+@keyframes tutorialToastIn {
+    from { opacity: 0; transform: translateY(24px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+
+.tutorial-toast-arrow {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-bottom: 16px solid #fff;
+    top: -16px;
+    left: 32px;
+}
+.tutorial-toast-arrow-down {
+    border-bottom: none;
+    border-top: 16px solid #fff;
+    top: auto;
+    bottom: -16px;
+    left: 32px;
+}
+
+.tutorial-block {
+    pointer-events: auto;
+}

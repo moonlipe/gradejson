@@ -1165,6 +1165,11 @@ function attachEventListeners() {
 
 // ========== INICIALIZAÇÃO ==========
 function init() {
+        // Tutorial inicial para novos usuários
+        if (!localStorage.getItem('gradeJsonTutorialShown')) {
+            showTutorial();
+            localStorage.setItem('gradeJsonTutorialShown', '1');
+        }
     loadFileBtn.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', (e) => onLoadFiles(e.target.files));
     addSampleBtn.addEventListener('click', carregarExemplo);
@@ -1198,6 +1203,79 @@ function init() {
     
     carregarExemplo();
     attachEventListeners();
+    // Botão tutorial manual
+    const tutorialBtn = document.getElementById('tutorialBtn');
+    if (tutorialBtn) {
+        tutorialBtn.addEventListener('click', showTutorial);
+    }
+}
+
+// Exibe tutorial inicial
+function showTutorial() {
+    const steps = [
+        {
+            selector: '#loadFileBtn',
+            text: 'Carregue um arquivo JSON clicando aqui.'
+        },
+        {
+            selector: '#formatEditorBtn',
+            text: 'Formate o JSON para melhor leitura.'
+        },
+        {
+            selector: '#exportJsonBtn',
+            text: 'Exporte o JSON editado para seu computador.'
+        },
+        {
+            selector: '#copyJsonBtn',
+            text: 'Copie o JSON para a área de transferência.'
+        }
+    ];
+    let current = 0;
+    let toast, blockOverlay;
+    function showStep(idx) {
+        // Remove elementos anteriores
+        if (toast) toast.remove();
+        if (blockOverlay) blockOverlay.remove();
+        const step = steps[idx];
+        const el = document.querySelector(step.selector);
+        if (!el) return;
+        // Overlay transparente para bloquear interação
+        blockOverlay = document.createElement('div');
+        blockOverlay.className = 'tutorial-block-overlay';
+        document.body.appendChild(blockOverlay);
+        // Toast explicativo
+        const rect = el.getBoundingClientRect();
+        toast = document.createElement('div');
+        toast.className = 'tutorial-toast';
+        // Posiciona o toast próximo ao elemento
+        let toastTop = rect.bottom + 24;
+        let toastLeft = rect.left;
+        let arrowHtml = '<div class="tutorial-toast-arrow"></div>';
+        // Para o botão copiar json, seta para baixo
+        let arrowClass = '';
+        if (step.selector === '#copyJsonBtn') {
+            toastTop = rect.top - 120;
+            arrowClass = ' tutorial-toast-arrow-down';
+        } else if (toastTop + 120 > window.innerHeight) {
+            toastTop = rect.top - 120;
+        }
+        if (toastLeft + 340 > window.innerWidth) toastLeft = window.innerWidth - 360;
+        toast.style.top = toastTop + 'px';
+        toast.style.left = toastLeft + 'px';
+        toast.innerHTML = `<div class="tutorial-toast-arrow${arrowClass}"></div>${step.text}`;
+        document.body.appendChild(toast);
+        // Avança ao clicar em qualquer lugar
+        blockOverlay.onclick = toast.onclick = () => {
+            if (current < steps.length - 1) {
+                current++;
+                showStep(current);
+            } else {
+                toast.remove();
+                blockOverlay.remove();
+            }
+        };
+    }
+    showStep(current);
 }
 
 document.addEventListener('DOMContentLoaded', init);
